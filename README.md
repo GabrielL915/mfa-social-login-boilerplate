@@ -52,7 +52,8 @@ Ativar MFA (logado): `POST /auth/mfa/setup` (QR) -> `POST /auth/mfa/enable { cod
 Wizard que abre cada console, mostra o callback exato e grava no `backend/.env`:
 
 ```bash
-bash backend/setup-oauth.sh
+bash backend/setup-oauth.sh        # Git Bash / Linux / macOS
+.ackend\setup-oauth.ps1          # PowerShell (chama o Git Bash)
 ```
 
 - **Google**: console.cloud.google.com -> Credentials -> OAuth Client (Web). Redirect: `BACKEND_URL/auth/google/callback`.
