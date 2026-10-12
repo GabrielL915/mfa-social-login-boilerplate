@@ -7,6 +7,11 @@ export default defineConfig({
     port: 5173,
     host: true,
     allowedHosts: true, // ngrok / cloudflared
-    proxy: { '/auth': 'http://localhost:3000', '/sso': 'http://localhost:3000' }, // front chama /auth relativo, vite repassa pro Nest
+    // front chama /auth e /sso relativos, vite repassa pro Nest.
+    // Excecao: /auth/callback e rota do React (onde o backend devolve o usuario).
+    proxy: {
+      '^/auth/(?!callback)': 'http://localhost:3000',
+      '/sso': 'http://localhost:3000',
+    },
   },
 });
