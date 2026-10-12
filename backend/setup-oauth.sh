@@ -243,8 +243,14 @@ pause
 
 # ── 3. Microsoft ──────────────────────────────────────────────────────────
 stage "Microsoft · App registration (Entra ID)"
+note "Precisa de um diretorio (tenant) do Entra ID. Conta Microsoft pessoal sem tenant"
+note "mostra 'creating applications outside of a directory has been deprecated'."
+note "Se for seu caso: crie uma conta Azure gratuita (ela ja vem com um tenant):"
+note "  https://azure.microsoft.com/free"
+note "Depois volte aqui. Nao precisa cartao pra registrar apps no Entra."
 if confirm "Configurar login com Microsoft agora?"; then
-  open_url "https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade"
+  open_url "https://entra.microsoft.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade"
+  step "Confira no topo a direita se esta dentro do seu tenant (nao em 'conta pessoal')."
   step "Clique '+ New registration'."
   step "Nome: o do seu app."
   step "Supported account types: 'Accounts in any organizational directory and personal Microsoft accounts'"
