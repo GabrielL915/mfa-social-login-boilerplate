@@ -49,12 +49,23 @@ Ativar MFA (logado): `POST /auth/mfa/setup` (QR) -> `POST /auth/mfa/enable { cod
 
 ## Config dos providers
 
-Wizard que abre cada console, mostra o callback exato e grava no `backend/.env`:
+## Wizards
+
+Scripts interativos que abrem cada console, mostram o valor exato pra colar e gravam a config. Cada etapa pode ser pulada com `n`; rodando de novo, mantem o que ja existe.
+
+| Wizard | Faz | Grava em |
+|---|---|---|
+| `backend/setup-oauth.sh` | Google, Microsoft, Apple + segredos do JWT | `backend/.env` |
+| `backend/setup-sso.sh` | Uma conexao SSO (empresa cliente), OIDC ou SAML | `backend/sso-connections.local.json` |
 
 ```bash
 bash backend/setup-oauth.sh        # Git Bash / Linux / macOS
 .ackend\setup-oauth.ps1          # PowerShell (chama o Git Bash)
+bash backend/setup-sso.sh
+.ackend\setup-sso.ps1
 ```
+
+Apple esta fora por padrao (`VITE_SOCIAL_PROVIDERS=google,microsoft` no front) porque exige Apple Developer Program pago. Pra ligar: configurar no wizard e adicionar `apple` na variavel.
 
 - **Google**: console.cloud.google.com -> Credentials -> OAuth Client (Web). Redirect: `BACKEND_URL/auth/google/callback`.
 - **Microsoft**: portal.azure.com -> App registrations -> Web redirect `BACKEND_URL/auth/microsoft/callback`. Tenant `common` aceita conta pessoal + corporativa.
@@ -103,7 +114,7 @@ usuario digita maria@acme.com
 | GET | /sso/saml/metadata/:connectionId | - (XML pro IdP importar) |
 | GET/POST | /sso/connections | Bearer (em prod: role admin) |
 
-Registrar uma conexao OIDC (Azure AD de um cliente):
+Registrar uma conexao: `bash backend/setup-sso.sh` (grava em `sso-connections.local.json`, carregado no boot) ou via API:
 
 ```json
 POST /sso/connections
