@@ -2,8 +2,10 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
+import { assertDevBypassSafe } from './common/dev-bypass';
 
 async function bootstrap() {
+  assertDevBypassSafe();
   const app = await NestFactory.create(AppModule);
   app.use(cookieParser());
   app.enableCors({ origin: process.env.FRONTEND_URL, credentials: true });

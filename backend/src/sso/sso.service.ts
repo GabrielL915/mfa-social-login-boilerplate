@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Issuer, Client, generators } from 'openid-client';
@@ -7,6 +7,7 @@ import { SsoConnectionsService } from './sso-connections.service';
 import { SsoConnection } from './sso-connection.entity';
 import { UsersService } from '../users/users.service';
 import { AuthService } from '../auth/auth.service';
+import { devBypassEnabled } from '../common/dev-bypass';
 
 /** Estado assinado que vai e volta no fluxo (no lugar de sessao server-side). */
 interface SsoState { cid: string; nonce?: string; verifier?: string }
@@ -30,7 +31,11 @@ export class SsoService {
   /** Passo 1: usuario digita o email, a gente descobre o IdP e devolve a URL de redirect. */
   async startByEmail(email: string) {
     const conn = this.connections.byEmail(email);
-    if (!conn) throw new BadRequestException('Nenhuma conexao SSO para este dominio');
+    if (!conn) {
+      // DEV: sem conexao cadastrada, usa o IdP fake interno pra ver o funil inteiro
+      if (devBypassEnabled()) return `${this.backendUrl}/sso/dev/callback?email=${encodeURIComponent(email)}`;
+      throw new BadRequestException('Nenhuma conexao SSO para este dominio');
+    }
     return this.startByConnection(conn, email);
   }
 
@@ -120,6 +125,21 @@ export class SsoService {
     const conn = this.connections.byId(connectionId);
     if (conn.type !== 'saml') throw new BadRequestException();
     return this.saml(conn).generateServiceProviderMetadata(null, null);
+  }
+
+  // ---------------- DEV: IdP fake ----------------
+  /** Autentica qualquer email como se o IdP da empresa tivesse aprovado. So com DEV_AUTH_BYPASS. */
+  async devCallback(email: string) {
+    if (!devBypassEnabled()) throw new NotFoundException();
+    if (!email?.includes('@')) throw new BadRequestException('email invalido');
+    const user = await this.users.findOrCreateSocial({
+      provider: 'sso',
+      providerId: `dev:${email.toLowerCase()}`,
+      email,
+      name: email.split('@')[0],
+    });
+    const result = await this.auth.issueAfterPrimaryAuth(user);
+    return this.auth.buildSocialRedirect(result);
   }
 
   // ---------------- comum ----------------

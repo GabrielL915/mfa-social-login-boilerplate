@@ -8,6 +8,7 @@ import { randomBytes } from 'crypto';
 import { UsersService } from '../users/users.service';
 import { User } from '../users/user.entity';
 import { normalizeCpf } from '../users/cpf';
+import { DEV_MFA_CODE, devBypassEnabled } from '../common/dev-bypass';
 
 /** Nunca colocar CPF aqui: o JWT e legivel por quem tiver o token. */
 export interface AccessPayload { sub: string; email: string; mfa: boolean }
@@ -130,10 +131,16 @@ export class AuthService {
     const user = await this.users.findById(sub);
     if (!user?.mfaEnabled || !user.mfaSecret) throw new UnauthorizedException();
 
-    const ok = authenticator.check(code, user.mfaSecret) || (await this.consumeRecoveryCode(user, code));
+    const ok = this.checkTotp(code, user.mfaSecret) || (await this.consumeRecoveryCode(user, code));
     if (!ok) throw new UnauthorizedException('Codigo invalido');
 
     return { accessToken: this.signAccess(user) };
+  }
+
+  /** TOTP real, ou 000000 quando DEV_AUTH_BYPASS esta ligado. */
+  private checkTotp(code: string, secret?: string) {
+    if (devBypassEnabled() && code === DEV_MFA_CODE) return true;
+    return !!secret && authenticator.check(code, secret);
   }
 
   private async consumeRecoveryCode(user: User, code: string) {
@@ -163,7 +170,7 @@ export class AuthService {
   async mfaEnable(userId: string, code: string) {
     const user = await this.users.findById(userId);
     if (!user.mfaSecret) throw new BadRequestException('Chame /auth/mfa/setup antes');
-    if (!authenticator.check(code, user.mfaSecret)) throw new BadRequestException('Codigo invalido');
+    if (!this.checkTotp(code, user.mfaSecret)) throw new BadRequestException('Codigo invalido');
 
     const plain = Array.from({ length: 8 }, () => randomBytes(5).toString('hex'));
     const hashed = await Promise.all(plain.map((c) => bcrypt.hash(c, 10)));
@@ -174,7 +181,7 @@ export class AuthService {
   async mfaDisable(userId: string, code: string) {
     const user = await this.users.findById(userId);
     if (!user.mfaEnabled) throw new BadRequestException('MFA nao esta ativo');
-    if (!authenticator.check(code, user.mfaSecret)) throw new BadRequestException('Codigo invalido');
+    if (!this.checkTotp(code, user.mfaSecret)) throw new BadRequestException('Codigo invalido');
     await this.users.update(user.id, { mfaEnabled: false, mfaSecret: undefined, mfaRecoveryCodes: [] });
     return { ok: true };
   }

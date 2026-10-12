@@ -33,6 +33,12 @@ export class SsoController {
     res.redirect(await this.sso.startByConnection(this.connections.byId(id)));
   }
 
+  /** DEV: IdP fake (so responde com DEV_AUTH_BYPASS=true). */
+  @Get('dev/callback')
+  async devCallback(@Query('email') email: string, @Res() res: Response) {
+    res.redirect(await this.sso.devCallback(email));
+  }
+
   @Get('oidc/callback')
   async oidcCallback(@Query() query: Record<string, string>, @Res() res: Response) {
     res.redirect(await this.sso.oidcCallback(query));

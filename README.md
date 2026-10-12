@@ -60,6 +60,19 @@ bash backend/setup-oauth.sh        # Git Bash / Linux / macOS
 - **Microsoft**: portal.azure.com -> App registrations -> Web redirect `BACKEND_URL/auth/microsoft/callback`. Tenant `common` aceita conta pessoal + corporativa.
 - **Apple**: developer.apple.com -> Services ID (= `APPLE_CLIENT_ID`), Sign in with Apple habilitado, Key (.p8) -> `APPLE_KEY_ID` + `APPLE_PRIVATE_KEY`. Apple exige HTTPS e dominio verificado, nao funciona em localhost (usar ngrok). Nome do usuario so vem na 1a autorizacao.
 
+## Bypass de desenvolvimento
+
+Pra testar o funil sem app autenticador nem IdP real, no `backend/.env`:
+
+```
+DEV_AUTH_BYPASS=true
+```
+
+- **MFA:** o codigo `000000` vale como TOTP (ativar, verificar, desativar). Codigos errados continuam rejeitados.
+- **SSO:** email de dominio sem conexao cadastrada entra por um IdP fake interno (`/sso/dev/callback`) e cai no mesmo funil (completar CPF -> MFA -> logado).
+
+Seguranca: so funciona com `NODE_ENV != production`. Com `DEV_AUTH_BYPASS=true` e `NODE_ENV=production` o backend **recusa subir**. Com o flag desligado a rota dev nem existe (404).
+
 ## Antes de ir pra prod
 
 - Criptografar `mfaSecret` no banco.
