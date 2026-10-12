@@ -1,12 +1,12 @@
 import { FormEvent, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { api } from '../lib/api';
+import { api, formatCpf } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import SocialButtons from './SocialButtons';
 
 export default function Login() {
   const { handlePrimaryResult } = useAuth();
-  const [email, setEmail] = useState('');
+  const [cpf, setCpf] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
@@ -14,7 +14,7 @@ export default function Login() {
     e.preventDefault();
     setError('');
     try {
-      handlePrimaryResult(await api.login(email, password));
+      handlePrimaryResult(await api.login(cpf, password));
     } catch (err: any) {
       setError(err.message);
     }
@@ -24,7 +24,7 @@ export default function Login() {
     <div style={{ maxWidth: 360, margin: '80px auto', fontFamily: 'sans-serif' }}>
       <h1>Entrar</h1>
       <form onSubmit={submit} style={{ display: 'grid', gap: 8 }}>
-        <input placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
+        <input inputMode="numeric" placeholder="CPF" value={cpf} onChange={(e) => setCpf(formatCpf(e.target.value))} />
         <input placeholder="Senha" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
         <button type="submit">Entrar</button>
       </form>

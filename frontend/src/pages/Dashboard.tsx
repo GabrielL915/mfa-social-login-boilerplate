@@ -28,6 +28,7 @@ export default function Dashboard() {
   return (
     <div style={{ maxWidth: 420, margin: '80px auto', fontFamily: 'sans-serif' }}>
       <h1>Ola, {me.name ?? me.email}</h1>
+      <p>CPF: {me.cpf}</p>
       <p>Provider: {me.provider}</p>
       <p>MFA: {me.mfaEnabled ? 'ativo' : 'inativo'}</p>
       {me.mfaEnabled ? (

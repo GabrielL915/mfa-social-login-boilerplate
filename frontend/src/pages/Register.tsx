@@ -1,11 +1,12 @@
 import { FormEvent, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { api } from '../lib/api';
+import { api, formatCpf } from '../lib/api';
 import { useAuth } from '../lib/auth';
 
 export default function Register() {
   const { handlePrimaryResult } = useAuth();
   const [name, setName] = useState('');
+  const [cpf, setCpf] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -14,7 +15,7 @@ export default function Register() {
     e.preventDefault();
     setError('');
     try {
-      handlePrimaryResult(await api.register(email, password, name));
+      handlePrimaryResult(await api.register(cpf, email, password, name));
     } catch (err: any) {
       setError(err.message);
     }
@@ -25,6 +26,7 @@ export default function Register() {
       <h1>Cadastro</h1>
       <form onSubmit={submit} style={{ display: 'grid', gap: 8 }}>
         <input placeholder="Nome" value={name} onChange={(e) => setName(e.target.value)} />
+        <input inputMode="numeric" placeholder="CPF" value={cpf} onChange={(e) => setCpf(formatCpf(e.target.value))} />
         <input placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
         <input placeholder="Senha (min 8)" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
         <button type="submit">Criar conta</button>

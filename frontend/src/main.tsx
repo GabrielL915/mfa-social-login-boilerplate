@@ -8,6 +8,7 @@ import MfaVerify from './pages/MfaVerify';
 import MfaSetup from './pages/MfaSetup';
 import SocialCallback from './pages/SocialCallback';
 import SsoLogin from './pages/SsoLogin';
+import CompleteProfile from './pages/CompleteProfile';
 import Dashboard from './pages/Dashboard';
 
 function Private({ children }: { children: React.ReactElement }) {
@@ -24,6 +25,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
           <Route path="/register" element={<Register />} />
           <Route path="/mfa" element={<MfaVerify />} />
           <Route path="/sso" element={<SsoLogin />} />
+          <Route path="/complete-profile" element={<CompleteProfile />} />
           <Route path="/auth/callback" element={<SocialCallback />} />
           <Route path="/mfa/setup" element={<Private><MfaSetup /></Private>} />
           <Route path="/" element={<Private><Dashboard /></Private>} />

@@ -1,6 +1,6 @@
 # MFA + Login Social (NestJS + React)
 
-Boilerplate funcional: senha + TOTP (Google Authenticator etc.), Google, Microsoft e Apple via Passport.
+Boilerplate funcional: **CPF + senha** + TOTP (Google Authenticator etc.), Google, Microsoft e Apple via Passport, e SSO corporativo (OIDC/SAML).
 
 ## Rodar
 
@@ -13,12 +13,20 @@ Usuarios ficam em memoria (`backend/src/users/users.service.ts`). Trocar os 5 me
 
 ## Fluxo
 
-1. 1o fator: `POST /auth/login` (senha) ou redirect `GET /auth/{google|microsoft|apple}`.
-2. Backend chama `issueAfterPrimaryAuth(user)`:
-   - sem MFA -> `{ accessToken }`
-   - com MFA -> `{ mfaRequired: true, mfaToken }` (JWT de 5 min, secret separado)
-3. Front manda pra `/mfa`, usuario digita TOTP, `POST /auth/mfa/verify { mfaToken, code }` -> `{ accessToken }`.
-4. Social: backend redireciona pra `FRONTEND_URL/auth/callback?accessToken=...` ou `?mfaToken=...`.
+1. 1o fator: `POST /auth/login { cpf, password }`, redirect `GET /auth/{google|microsoft|apple}`, ou SSO.
+2. Backend chama `issueAfterPrimaryAuth(user)`, que devolve um `step`:
+   - `profile` -> `{ profileToken }`: usuario veio de social/SSO e ainda nao tem CPF
+   - `mfa` -> `{ mfaToken }`: 2o fator (JWT de 5 min, secret separado)
+   - `done` -> `{ accessToken }`
+3. Front: `profile` -> `/complete-profile`; `mfa` -> `/mfa` e `POST /auth/mfa/verify { mfaToken, code }`.
+4. Social/SSO: backend redireciona pra `FRONTEND_URL/auth/callback?profileToken=|mfaToken=|accessToken=`.
+
+## CPF como identificador
+
+- Login e por CPF (normalizado pra 11 digitos, digito verificador validado, UNIQUE). Email continua obrigatorio no cadastro: e por ele que social/SSO linkam a conta e e o rotulo no app autenticador.
+- CPF nunca vai no JWT nem em URL. `/auth/me` devolve mascarado (`***.456.789-**`). Em prod, considerar criptografar em repouso.
+- **Completar cadastro:** Google/Microsoft/Apple/SSO nao devolvem CPF. Na 1a entrada o usuario e criado sem CPF e cai em `POST /auth/profile/complete { profileToken, cpf }`.
+- **Vinculo de conta:** se o CPF informado ja pertence a outra conta, responde `409 { code: "CPF_IN_USE", canLink }`. O front pede a **senha daquela conta** e chama `POST /auth/profile/link { profileToken, cpf, password }`. Com a senha certa o login social e vinculado a conta existente (a temporaria e apagada) e o MFA dela continua valendo. Sem exigir a senha, qualquer um que soubesse um CPF sequestraria a conta via Google.
 
 Ativar MFA (logado): `POST /auth/mfa/setup` (QR) -> `POST /auth/mfa/enable { code }` (retorna 8 recovery codes).
 
@@ -26,8 +34,10 @@ Ativar MFA (logado): `POST /auth/mfa/setup` (QR) -> `POST /auth/mfa/enable { cod
 
 | Metodo | Rota | Auth |
 |---|---|---|
-| POST | /auth/register | - |
-| POST | /auth/login | - |
+| POST | /auth/register `{ cpf, email, password, name }` | - |
+| POST | /auth/login `{ cpf, password }` | - |
+| POST | /auth/profile/complete `{ profileToken, cpf }` | - |
+| POST | /auth/profile/link `{ profileToken, cpf, password }` | - |
 | POST | /auth/mfa/verify | mfaToken no body |
 | POST | /auth/mfa/setup | Bearer |
 | POST | /auth/mfa/enable | Bearer |

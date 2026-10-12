@@ -4,7 +4,8 @@ import { Request, Response } from 'express';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { ProviderConfiguredGuard } from './guards/provider-configured.guard';
-import { LoginDto, MfaCodeDto, MfaLoginDto, RegisterDto } from './dto/auth.dto';
+import { CompleteProfileDto, LinkAccountDto, LoginDto, MfaCodeDto, MfaLoginDto, RegisterDto } from './dto/auth.dto';
+import { maskCpf } from '../users/cpf';
 import { User } from '../users/user.entity';
 
 @Controller('auth')
@@ -14,12 +15,23 @@ export class AuthController {
   // ---------- local ----------
   @Post('register')
   register(@Body() dto: RegisterDto) {
-    return this.auth.register(dto.email, dto.password, dto.name);
+    return this.auth.register(dto.cpf, dto.email, dto.password, dto.name);
   }
 
   @Post('login')
   login(@Body() dto: LoginDto) {
-    return this.auth.login(dto.email, dto.password);
+    return this.auth.login(dto.cpf, dto.password);
+  }
+
+  // ---------- completar cadastro (social/SSO sem CPF) ----------
+  @Post('profile/complete')
+  completeProfile(@Body() dto: CompleteProfileDto) {
+    return this.auth.completeProfile(dto.profileToken, dto.cpf);
+  }
+
+  @Post('profile/link')
+  linkAccount(@Body() dto: LinkAccountDto) {
+    return this.auth.linkAccount(dto.profileToken, dto.cpf, dto.password);
   }
 
   // ---------- MFA ----------
@@ -49,8 +61,8 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @Get('me')
   me(@Req() req: Request) {
-    const { passwordHash, mfaSecret, mfaRecoveryCodes, ...safe } = req.user as User;
-    return safe;
+    const { passwordHash, mfaSecret, mfaRecoveryCodes, cpf, ...safe } = req.user as User;
+    return { ...safe, cpf: maskCpf(cpf), profileComplete: !!cpf };
   }
 
   // ---------- social: Google ----------

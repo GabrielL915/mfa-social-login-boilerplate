@@ -5,7 +5,7 @@ import { PrimaryAuthResult } from './api';
 interface AuthCtx {
   token: string | null;
   setToken: (t: string | null) => void;
-  /** Trata o resultado do 1o fator: ou loga, ou manda pra tela de MFA. */
+  /** Trata o resultado do 1o fator: completar cadastro, MFA, ou logado. */
   handlePrimaryResult: (r: PrimaryAuthResult) => void;
   logout: () => void;
 }
@@ -23,12 +23,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const handlePrimaryResult = (r: PrimaryAuthResult) => {
-    if (r.mfaRequired) {
-      sessionStorage.setItem('mfaToken', r.mfaToken);
-      navigate('/mfa');
-    } else {
-      setToken(r.accessToken);
-      navigate('/');
+    switch (r.step) {
+      case 'profile':
+        sessionStorage.setItem('profileToken', r.profileToken);
+        navigate('/complete-profile');
+        break;
+      case 'mfa':
+        sessionStorage.setItem('mfaToken', r.mfaToken);
+        navigate('/mfa');
+        break;
+      case 'done':
+        setToken(r.accessToken);
+        navigate('/');
     }
   };
 
