@@ -56,3 +56,55 @@ bash backend/setup-oauth.sh
 - Refresh token em cookie httpOnly em vez de accessToken no localStorage.
 - Passar token do social callback por cookie ou code de uso unico em vez de query string.
 - Guardar `providerId` por provider e lidar com conflito de email entre providers.
+
+## SSO corporativo (OIDC / SAML)
+
+Diferente do social (conta pessoal do usuario), no SSO a **empresa** e o provedor: Azure AD do cliente, Okta, Google Workspace, Keycloak. Cada cliente vira uma **conexao SSO** ligada a um dominio de email. O fluxo cai no mesmo funil de MFA.
+
+```
+usuario digita maria@acme.com
+  -> POST /sso/start            acha a conexao pelo dominio, devolve URL do IdP
+  -> IdP autentica
+  -> GET  /sso/oidc/callback    (ou POST /sso/saml/callback/:id)
+  -> issueAfterPrimaryAuth      MFA se ativo, senao accessToken
+  -> FRONTEND_URL/auth/callback
+```
+
+| Metodo | Rota | Auth |
+|---|---|---|
+| POST | /sso/start `{ email }` | - |
+| GET | /sso/start/:connectionId | redirect |
+| GET | /sso/oidc/callback | - |
+| POST | /sso/saml/callback/:connectionId | - |
+| GET | /sso/saml/metadata/:connectionId | - (XML pro IdP importar) |
+| GET/POST | /sso/connections | Bearer (em prod: role admin) |
+
+Registrar uma conexao OIDC (Azure AD de um cliente):
+
+```json
+POST /sso/connections
+{
+  "domain": "acme.com", "name": "Acme", "type": "oidc",
+  "oidc": {
+    "issuer": "https://login.microsoftonline.com/<TENANT_ID>/v2.0",
+    "clientId": "...", "clientSecret": "..."
+  }
+}
+```
+
+Redirect URI pra cadastrar no IdP: `BACKEND_URL/sso/oidc/callback`. Okta: issuer `https://<org>.okta.com`. Google Workspace: `https://accounts.google.com`. Keycloak: `https://<host>/realms/<realm>`.
+
+Registrar SAML:
+
+```json
+{
+  "domain": "acme.com", "name": "Acme", "type": "saml",
+  "saml": { "entryPoint": "https://idp.acme.com/sso/saml", "idpCert": "MIIC..." }
+}
+```
+
+ACS URL: `BACKEND_URL/sso/saml/callback/<connectionId>`; entityID/metadata: `BACKEND_URL/sso/saml/metadata/<connectionId>`.
+
+Seguranca ja embutida: PKCE + nonce + state assinado (JWT 10 min), e o email retornado pelo IdP **precisa** ser do dominio da conexao (um IdP nao consegue afirmar email de outra empresa).
+
+Testado: OIDC de ponta a ponta contra um IdP mock (`oauth2-mock-server`), com e sem MFA. SAML compila mas nao foi testado contra IdP real.

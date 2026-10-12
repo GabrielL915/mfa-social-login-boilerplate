@@ -33,6 +33,9 @@ export default function Login() {
         Sem conta? <Link to="/register">Cadastrar</Link>
       </p>
       <SocialButtons />
+      <p style={{ marginTop: 16 }}>
+        Conta corporativa? <Link to="/sso">Entrar com SSO</Link>
+      </p>
     </div>
   );
 }

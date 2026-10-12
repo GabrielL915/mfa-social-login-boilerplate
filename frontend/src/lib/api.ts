@@ -32,5 +32,6 @@ export const api = {
     request<{ recoveryCodes: string[]; accessToken: string }>('/auth/mfa/enable', { code }, token),
   mfaDisable: (token: string, code: string) =>
     request<{ ok: true }>('/auth/mfa/disable', { code }, token),
+  ssoStart: (email: string) => request<{ url: string }>('/sso/start', { email }),
   socialUrl: (provider: 'google' | 'microsoft' | 'apple') => `${API_URL}/auth/${provider}`,
 };

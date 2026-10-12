@@ -25,5 +25,6 @@ import { AppleStrategy } from './strategies/apple.strategy';
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy, GoogleStrategy, MicrosoftStrategy, AppleStrategy],
+  exports: [AuthService],
 })
 export class AuthModule {}

@@ -1,4 +1,4 @@
-export type Provider = 'local' | 'google' | 'microsoft' | 'apple';
+export type Provider = 'local' | 'google' | 'microsoft' | 'apple' | 'sso';
 
 export interface User {
   id: string;
